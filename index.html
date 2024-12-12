@@ -68,7 +68,6 @@
             transform: translateY(1px);
         }
 
-        /* 视频展示区域 */
         #gallery {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -141,60 +140,78 @@
         const selectedUrls = new Set();
 
         // 展示视频
-        function displayVideos() {
+        async function displayVideos() {
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = ''; // 清空之前的内容
             selectedUrls.clear(); // 清空选中的 URL
 
             const urls = document.getElementById('videoUrls').value.split('\n').map(url => url.trim()).filter(url => url);
 
-            urls.forEach(url => {
-                const container = document.createElement('div');
-                container.className = 'video-container';
+            for (const url of urls) {
+                try {
+                    const actualUrl = await getActualVideoUrl(url);
 
-                const video = document.createElement('video');
-                video.src = url;
-                video.controls = true;
-                video.onerror = () => {
-                    video.style.display = 'none';
-                    const placeholder = document.createElement('div');
-                    placeholder.textContent = '视频加载失败';
-                    container.appendChild(placeholder);
-                };
+                    const container = document.createElement('div');
+                    container.className = 'video-container';
 
-                const actionButtons = document.createElement('div');
-                actionButtons.className = 'action-buttons';
+                    const video = document.createElement('video');
+                    video.src = actualUrl;
+                    video.controls = true;
+                    video.onerror = () => {
+                        video.style.display = 'none';
+                        const placeholder = document.createElement('div');
+                        placeholder.textContent = '视频加载失败';
+                        container.appendChild(placeholder);
+                    };
 
-                const selectButton = document.createElement('button');
-                selectButton.textContent = '选择';
-                selectButton.onclick = () => {
-                    if (selectedUrls.has(url)) {
-                        selectedUrls.delete(url);
-                        selectButton.classList.remove('selected');
-                    } else {
-                        selectedUrls.add(url);
-                        selectButton.classList.add('selected');
-                    }
-                };
+                    const actionButtons = document.createElement('div');
+                    actionButtons.className = 'action-buttons';
 
-                const copyButton = document.createElement('button');
-                copyButton.textContent = '复制 URL';
-                copyButton.onclick = async () => {
-                    try {
-                        await navigator.clipboard.writeText(url);
-                        alert('URL 已复制到剪贴板');
-                    } catch {
-                        alert('复制失败');
-                    }
-                };
+                    const selectButton = document.createElement('button');
+                    selectButton.textContent = '选择';
+                    selectButton.onclick = () => {
+                        if (selectedUrls.has(actualUrl)) {
+                            selectedUrls.delete(actualUrl);
+                            selectButton.classList.remove('selected');
+                        } else {
+                            selectedUrls.add(actualUrl);
+                            selectButton.classList.add('selected');
+                        }
+                    };
 
-                actionButtons.appendChild(selectButton);
-                actionButtons.appendChild(copyButton);
+                    const copyButton = document.createElement('button');
+                    copyButton.textContent = '复制 URL';
+                    copyButton.onclick = async () => {
+                        try {
+                            await navigator.clipboard.writeText(actualUrl);
+                            alert('URL 已复制到剪贴板');
+                        } catch {
+                            alert('复制失败');
+                        }
+                    };
 
-                container.appendChild(video);
-                container.appendChild(actionButtons);
-                gallery.appendChild(container);
-            });
+                    actionButtons.appendChild(selectButton);
+                    actionButtons.appendChild(copyButton);
+
+                    container.appendChild(video);
+                    container.appendChild(actionButtons);
+                    gallery.appendChild(container);
+
+                } catch (error) {
+                    console.error('获取视频实际 URL 失败:', error);
+                }
+            }
+        }
+
+        // 获取实际视频 URL
+        async function getActualVideoUrl(url) {
+            // 示例：尝试直接返回或解析 URL
+            if (url.includes('#')) {
+                url = url.split('#')[0]; // 去掉片段标识符
+            }
+
+            // 如果需要进一步解析，可以在这里添加逻辑
+            return url;
         }
 
         // 复制选中视频的 URL
