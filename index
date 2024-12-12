@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量展示视频</title>
+    <style>
+        /* 基本样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(45deg, #A1B4D2, #c4d6ea);
+            color: #333;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 40px 0;
+            color: #333;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 15px;
+            padding: 12px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            box-sizing: border-box;
+            background-color: #fff;
+            color: #555;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #6e7dff;
+            box-shadow: 0 0 8px rgba(110, 125, 255, 0.5);
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 25px;
+            background: #4b6e8e;
+            color: white;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background: #3a567b;
+            transform: translateY(-3px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* 视频展示区域 */
+        #gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .video-container {
+            position: relative;
+            background-color: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .video-container:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-bottom: 5px solid #f1f1f1;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        .action-buttons button {
+            background-color: #28a745;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            color: white;
+            border: none;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .action-buttons button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        .selected {
+            background-color: #f39c12 !important;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>批量展示视频</h1>
+    <div style="text-align:center;">
+        <textarea id="videoUrls" placeholder="输入视频 URL，每行一个"></textarea>
+        <div>
+            <button onclick="displayVideos()">展示视频</button>
+            <button onclick="copySelectedUrls()">复制选中视频 URL</button>
+        </div>
+    </div>
+    <div id="gallery"></div>
+
+    <script>
+        const selectedUrls = new Set();
+
+        // 展示视频
+        function displayVideos() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = ''; // 清空之前的内容
+            selectedUrls.clear(); // 清空选中的 URL
+
+            const urls = document.getElementById('videoUrls').value.split('\n').map(url => url.trim()).filter(url => url);
+
+            urls.forEach(url => {
+                const container = document.createElement('div');
+                container.className = 'video-container';
+
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.onerror = () => {
+                    video.style.display = 'none';
+                    const placeholder = document.createElement('div');
+                    placeholder.textContent = '视频加载失败';
+                    container.appendChild(placeholder);
+                };
+
+                const actionButtons = document.createElement('div');
+                actionButtons.className = 'action-buttons';
+
+                const selectButton = document.createElement('button');
+                selectButton.textContent = '选择';
+                selectButton.onclick = () => {
+                    if (selectedUrls.has(url)) {
+                        selectedUrls.delete(url);
+                        selectButton.classList.remove('selected');
+                    } else {
+                        selectedUrls.add(url);
+                        selectButton.classList.add('selected');
+                    }
+                };
+
+                const copyButton = document.createElement('button');
+                copyButton.textContent = '复制 URL';
+                copyButton.onclick = async () => {
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        alert('URL 已复制到剪贴板');
+                    } catch {
+                        alert('复制失败');
+                    }
+                };
+
+                actionButtons.appendChild(selectButton);
+                actionButtons.appendChild(copyButton);
+
+                container.appendChild(video);
+                container.appendChild(actionButtons);
+                gallery.appendChild(container);
+            });
+        }
+
+        // 复制选中视频的 URL
+        function copySelectedUrls() {
+            if (selectedUrls.size === 0) {
+                alert('没有选中任何视频');
+                return;
+            }
+
+            const urls = Array.from(selectedUrls).join('\n');
+            navigator.clipboard.writeText(urls).then(() => {
+                alert('选中视频的 URL 已复制到剪贴板');
+            }).catch(() => {
+                alert('复制失败');
+            });
+        }
+    </script>
+</body>
+
+</html>
